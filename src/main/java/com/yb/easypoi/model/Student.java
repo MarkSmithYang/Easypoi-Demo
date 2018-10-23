@@ -29,19 +29,19 @@ public class Student implements Serializable {
     /**
      * 年龄
      */
-    @Excel(name = "入学编号",orderNum = "1")
+    @Excel(name = "年龄",orderNum = "3")
     private Integer age;
 
     /**
      * 班级
      */
-    @Excel(name = "入学编号",orderNum = "1")
+    @Excel(name = "班级",orderNum = "4")
     private String className;
 
     /**
      * 入学时间
      */
-    @Excel(name = "入学时间",orderNum = "1")
+    @Excel(name = "入学时间",orderNum = "5")
     private LocalDate joinTime;
 
     public Student() {
