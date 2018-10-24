@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * @author yangbiao
- * @Description:学生实体类
+ * @Description:学生实体类--这个需要配合实体类使用的方式最好不要用jdbc来获取数据,使用jpa为最好
  * @date 2018/10/23
  */
 public class Student implements Serializable {

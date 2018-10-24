@@ -20,6 +20,10 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
+    /**
+     * 导出数据库中的数据到Excel并通过流在网页输出--(未使用模板的情况)
+     * @param response
+     */
     @GetMapping("exportFile")
     public void exportFile(HttpServletResponse response){
         studentService.exportFile(response);
