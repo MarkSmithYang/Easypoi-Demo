@@ -1,22 +1,38 @@
 package com.yb.easypoi.service;
 
+import cn.afterturn.easypoi.cache.manager.POICacheManager;
 import cn.afterturn.easypoi.excel.ExcelExportUtil;
+import cn.afterturn.easypoi.excel.ExcelXorHtmlUtil;
+import cn.afterturn.easypoi.excel.entity.ExcelToHtmlParams;
 import cn.afterturn.easypoi.excel.entity.ExportParams;
 import cn.afterturn.easypoi.excel.entity.TemplateExportParams;
+import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
+import cn.afterturn.easypoi.excel.export.template.ExcelExportOfTemplateUtil;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.repository.StudentRepository;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.poi.POITextExtractor;
+import org.apache.poi.POIXMLDocument;
+import org.apache.poi.extractor.ExtractorFactory;
+import org.apache.poi.hssf.model.InternalWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.filesystem.DocumentFactoryHelper;
+import org.apache.poi.poifs.filesystem.NPOIFSFileSystem;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.IOUtils;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tomcat.util.http.fileupload.FileItemStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -33,12 +49,16 @@ public class StudentService {
     @Autowired
     private StudentRepository studentRepository;
 
+    public List<Student> findAll(){
+        List<Student> result = studentRepository.findAll();
+        return result;
+    }
+
     /**
      * 导出数据到Excel--没用模板的情况
      * --注意ExcelExportUtil(3.3.0版本)和ExcelUtils(应该是较低版本的api(3.0.3还是这样的))
      */
     public void exportFile(HttpServletResponse response) {
-        exportTemplate(response);
         //获取需要导出的数据
         List<Student> all = studentRepository.findAll();
         //设置相关的样式标题等信息
@@ -55,24 +75,26 @@ public class StudentService {
      *
      * @param response
      */
-    public void exportTemplate(HttpServletResponse response) {
-        TemplateExportParams exportParams = new TemplateExportParams();
-        exportParams.setTemplateUrl("src\\main\\resources\\templates\\学生信息表模板.xls");
-        exportParams.setHeadingStartRow(0);
-        exportParams.setHeadingRows(2);
+    public void export(HttpServletResponse response) {
+        try {
+            InputStream inputStream = new FileInputStream(new File("C:\\MyDemoRepository\\easypoi-demo\\src\\main\\resources\\templates\\我的模板.xls"));
+            TemplateExportParams params = new TemplateExportParams();
+            params.setHeadingStartRow(0);
+            params.setHeadingRows(2);
+            params.setDataSheetNum(3);
+            params.setSheetName("学生");
+            params.setTemplateUrl("C:\\MyDemoRepository\\easypoi-demo\\src\\main\\resources\\templates\\学生信息模板.xlsx");
+            Map<String, Object> map = new HashMap<String, Object>();
 
-        //获取数据
-        List<Map<String, Object>> list = studentRepository.queryAll();
-        HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-        Map<String, Object> map = stringObjectHashMap;
-        map.put("id", "编号");
-        map.put("name", "姓名");
-        map.put("age", "年龄");
-        map.put("address", "居住地");
+            List<Student> all = studentRepository.findAll();
+            map.put("list", all);
+            Workbook exportExcel = ExcelExportUtil.exportExcel(params, map);
+            outPutExcel(response, exportExcel);
 
-        Workbook workbook = ExcelExportUtil.exportExcel(exportParams, map);
-        //输出为Exce文件
-        outPutExcel(response, workbook);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
