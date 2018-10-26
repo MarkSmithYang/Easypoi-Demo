@@ -1,6 +1,7 @@
 package com.yb.easypoi.service;
 
 import cn.afterturn.easypoi.cache.manager.POICacheManager;
+import cn.afterturn.easypoi.entity.ImageEntity;
 import cn.afterturn.easypoi.excel.ExcelExportUtil;
 import cn.afterturn.easypoi.excel.ExcelXorHtmlUtil;
 import cn.afterturn.easypoi.excel.entity.ExcelToHtmlParams;
@@ -25,6 +26,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.tomcat.util.http.fileupload.FileItemStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,14 +51,8 @@ public class StudentService {
     @Autowired
     private StudentRepository studentRepository;
 
-    public List<Student> findAll(){
-        List<Student> result = studentRepository.findAll();
-        return result;
-    }
-
     /**
      * 导出数据到Excel--没用模板的情况
-     * --注意ExcelExportUtil(3.3.0版本)和ExcelUtils(应该是较低版本的api(3.0.3还是这样的))
      */
     public void exportFile(HttpServletResponse response) {
         //获取需要导出的数据
@@ -72,29 +68,63 @@ public class StudentService {
 
     /**
      * 导出数据到Excel--用模板的情况
+     */
+    public void exportTemplae(HttpServletResponse response) {
+        TemplateExportParams params = new TemplateExportParams(
+                "src\\main\\resources\\templates\\WPS创建的Excel模板.xlsx");
+        params.setSheetName("学生信息表");
+        //封装数据
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("id", "入学编号");
+        map.put("name", "姓名");
+        map.put("age", "年龄");
+        map.put("join_time", "入学时间");
+        map.put("class_name", "班级");
+
+        //图片导出的写法(直接通过有参构造来设置图片信息,建议使用url的那种,
+        // 字节数组的那种是比较特定情况下来用,因为比较繁琐)
+        ImageEntity imageEntity1 = new ImageEntity("src/main/resources/static/a.png", 400, 300);
+        //map.put("class_name", imageEntity1);
+
+        //查询student的数据
+        List<Student> all = studentRepository.findAll();
+        //放入数据(需要通过遍历获取数据)
+        map.put("mapList", all);
+        //获取工作簿,在网页输出
+        Workbook workbook = ExcelExportUtil.exportExcel(params, map);
+        outPutExcel(response, workbook);
+    }
+
+
+    /**
+     * 用输出的流的方式把Excel在网页输出---(方法抽取)
      *
      * @param response
+     * @param word
      */
-    public void export(HttpServletResponse response) {
+    public void outPutWord(HttpServletResponse response, XWPFDocument word) {
+        if (word == null) {
+            log.info("获取到工作簿为空");
+            return;
+        }
+        //以流的方式输出到页面
+        //重置响应对象
+        response.reset();
+        //设置文件名称
+        String exportName = "我的word-" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
+        // 指定下载的文件名--设置响应头
         try {
-            InputStream inputStream = new FileInputStream(new File("C:\\MyDemoRepository\\easypoi-demo\\src\\main\\resources\\templates\\我的模板.xls"));
-            TemplateExportParams params = new TemplateExportParams();
-            params.setHeadingStartRow(0);
-            params.setHeadingRows(2);
-            params.setDataSheetNum(3);
-            params.setSheetName("学生");
-            params.setTemplateUrl("C:\\MyDemoRepository\\easypoi-demo\\src\\main\\resources\\templates\\学生信息模板.xlsx");
-            Map<String, Object> map = new HashMap<String, Object>();
-
-            List<Student> all = studentRepository.findAll();
-            map.put("list", all);
-            Workbook exportExcel = ExcelExportUtil.exportExcel(params, map);
-            outPutExcel(response, exportExcel);
-
-        } catch (FileNotFoundException e) {
+            response.setHeader("Content-Disposition", "attachment;filename=" +
+                    new String(exportName.getBytes("gb2312"), "ISO8859-1") + ".docx");
+        } catch (UnsupportedEncodingException e) {
+            log.info("中文文件名编码出错");
             e.printStackTrace();
         }
-
+        response.setContentType("application/vnd.ms-word;charset=UTF-8");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setDateHeader("Expires", 0);
+        outPutStream(response, null,word);
     }
 
     /**
@@ -112,7 +142,7 @@ public class StudentService {
         //重置响应对象
         response.reset();
         //设置文件名称
-        String exportName = "我的学生表-" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
+        String exportName = "我的Excel-" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
         // 指定下载的文件名--设置响应头
         try {
             response.setHeader("Content-Disposition", "attachment;filename=" +
@@ -125,13 +155,29 @@ public class StudentService {
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Cache-Control", "no-cache");
         response.setDateHeader("Expires", 0);
+       outPutStream(response, workbook, null);
+    }
+
+    /**
+     * 输出方法抽取-----(公共方法)
+     * @param response
+     * @param workbook
+     * @param word
+     */
+    private void outPutStream(HttpServletResponse response, Workbook workbook, XWPFDocument word) {
         //获取文件的流
         try {
             OutputStream outputStream = response.getOutputStream();
             //创建缓冲流
             BufferedOutputStream stream = new BufferedOutputStream(outputStream);
             //用工作簿输出流
-            workbook.write(stream);
+            if (word != null) {
+                word.write(stream);
+            } else if (workbook != null) {
+                workbook.write(stream);
+            } else {
+                throw new IOException("文档参数不能为空");
+            }
             //刷新关闭响应的流,先缓冲流
             stream.flush();
             stream.close();

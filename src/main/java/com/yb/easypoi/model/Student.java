@@ -17,7 +17,7 @@ public class Student implements Serializable {
     /**
      * 入学编号
      */
-    @Excel(name = "入学编号",orderNum = "1")
+    @Excel(name = "入学编号",orderNum = "1",needMerge = true)
     private String id;
 
     /**
@@ -35,13 +35,13 @@ public class Student implements Serializable {
     /**
      * 班级
      */
-    @Excel(name = "班级",orderNum = "4")
+    @Excel(name = "班级",orderNum = "4",mergeVertical = true)
     private String className;
 
     /**
      * 入学时间
      */
-    @Excel(name = "入学时间",orderNum = "5")
+    @Excel(name = "入学时间",orderNum = "5",needMerge = true,mergeVertical = true)
     private LocalDate joinTime;
 
     public Student() {
