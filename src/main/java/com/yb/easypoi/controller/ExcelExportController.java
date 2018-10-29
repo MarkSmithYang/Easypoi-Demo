@@ -4,8 +4,6 @@ import cn.afterturn.easypoi.cache.manager.POICacheManager;
 import cn.afterturn.easypoi.excel.ExcelXorHtmlUtil;
 import cn.afterturn.easypoi.excel.entity.ExcelToHtmlParams;
 import cn.afterturn.easypoi.excel.entity.enmus.ExcelType;
-import cn.afterturn.easypoi.pdf.PdfExportUtil;
-import com.sun.org.apache.regexp.internal.RE;
 import com.yb.easypoi.service.StudentService;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -16,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
@@ -31,8 +26,8 @@ import java.util.Scanner;
  */
 @RestController
 @CrossOrigin//处理跨域访问--(只有同一个域名下的不同服务那种才不是跨域访问)
-public class ExcelController {
-    public static final Logger log = LoggerFactory.getLogger(ExcelController.class);
+public class ExcelExportController {
+    public static final Logger log = LoggerFactory.getLogger(ExcelExportController.class);
 
     @Autowired
     private StudentService studentService;
@@ -55,6 +50,18 @@ public class ExcelController {
     public void exportTemplae(HttpServletResponse response) {
         studentService.exportTemplae(response);
     }
+
+    /**
+     * 多个关联对象情况下的Excel导出--->设定教师和课程是一对一的,因为是用jdbc做的,
+     * 数据不好封装,所以有很多地方会很繁琐,使用easypoi的时候用jpa是最好的
+     * @param response
+     */
+    @GetMapping("exportCollect")
+    public void exportCollect(HttpServletResponse response) {
+        studentService.exportCollect(response);
+    }
+
+    //--------------------------------------------------------------------------------------------
 
     /**
      * 把Excel响应到网页预览

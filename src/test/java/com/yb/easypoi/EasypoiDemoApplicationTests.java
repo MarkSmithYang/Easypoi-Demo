@@ -1,6 +1,6 @@
 package com.yb.easypoi;
 
-import com.yb.easypoi.controller.ExcelController;
+import com.yb.easypoi.controller.ExcelExportController;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +12,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class EasypoiDemoApplicationTests {
 
     @Autowired
-    private ExcelController excelController;
+    private ExcelExportController excelExportController;
 
     @Test
     public void contextLoads() {

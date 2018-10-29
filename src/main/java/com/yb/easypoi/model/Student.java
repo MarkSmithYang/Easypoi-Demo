@@ -1,6 +1,7 @@
 package com.yb.easypoi.model;
 
 import cn.afterturn.easypoi.excel.annotation.Excel;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -17,31 +18,31 @@ public class Student implements Serializable {
     /**
      * 入学编号
      */
-    @Excel(name = "入学编号",orderNum = "1",needMerge = true)
+    @Excel(name = "入学编号", orderNum = "1", needMerge = true)
     private String id;
 
     /**
      * 姓名
      */
-    @Excel(name = "姓名",orderNum = "2")
+    @Excel(name = "姓名", orderNum = "2", needMerge = true)
     private String name;
 
     /**
      * 年龄
      */
-    @Excel(name = "年龄",orderNum = "3")
+    @Excel(name = "年龄", orderNum = "3", needMerge = true,mergeVertical = true)
     private Integer age;
 
     /**
      * 班级
      */
-    @Excel(name = "班级",orderNum = "4",mergeVertical = true)
+    @Excel(name = "班级", orderNum = "4", mergeVertical = true)
     private String className;
 
     /**
      * 入学时间
      */
-    @Excel(name = "入学时间",orderNum = "5",needMerge = true,mergeVertical = true)
+    @Excel(name = "入学时间", orderNum = "5", needMerge = true, mergeVertical = true)
     private LocalDate joinTime;
 
     public Student() {
@@ -97,5 +98,16 @@ public class Student implements Serializable {
 
     public void setJoinTime(LocalDate joinTime) {
         this.joinTime = joinTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                ", className='" + className + '\'' +
+                ", joinTime=" + joinTime +
+                '}';
     }
 }

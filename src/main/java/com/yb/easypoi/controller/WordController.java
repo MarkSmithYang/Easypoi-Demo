@@ -2,8 +2,6 @@ package com.yb.easypoi.controller;
 
 import cn.afterturn.easypoi.entity.ImageEntity;
 import cn.afterturn.easypoi.word.WordExportUtil;
-import cn.afterturn.easypoi.word.entity.WordImageEntity;
-import com.sun.org.apache.regexp.internal.RE;
 import com.yb.easypoi.service.StudentService;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
@@ -12,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -51,7 +48,6 @@ public class WordController {
             log.info("异常为==" + e.getMessage());
             e.printStackTrace();
         }
-
     }
 
 }
