@@ -1,7 +1,7 @@
 package com.yb.easypoi.model;
 
 import cn.afterturn.easypoi.excel.annotation.Excel;
-import lombok.Data;
+import cn.afterturn.easypoi.excel.annotation.ExcelEntity;
 
 import java.io.Serializable;
 import java.time.LocalDate;

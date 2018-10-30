@@ -1,11 +1,7 @@
 package com.yb.easypoi.controller;
 
-import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
 import cn.afterturn.easypoi.pdf.PdfExportUtil;
 import cn.afterturn.easypoi.pdf.entity.PdfExportParams;
-import cn.afterturn.easypoi.pdf.styler.PdfExportStylerDefaultImpl;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.service.StudentService;
 import org.slf4j.Logger;
@@ -16,11 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author yangbiao

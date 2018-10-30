@@ -4,16 +4,13 @@ import com.google.common.collect.Lists;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.model.Teacher;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 

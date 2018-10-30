@@ -4,6 +4,7 @@ import cn.afterturn.easypoi.cache.manager.POICacheManager;
 import cn.afterturn.easypoi.excel.ExcelXorHtmlUtil;
 import cn.afterturn.easypoi.excel.entity.ExcelToHtmlParams;
 import cn.afterturn.easypoi.excel.entity.enmus.ExcelType;
+import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
 import com.yb.easypoi.service.StudentService;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -34,13 +35,24 @@ public class ExcelExportController {
 
     /**
      * 通过注解导出Excel数据
-     *
      * @param response
      */
     @GetMapping("exportFile")
     public void exportFile(HttpServletResponse response) {
         studentService.exportFile(response);
     }
+
+    /**
+     * 通过ExcelExportEntity(一个对象相当于一个注解,比注解更灵活,
+     * 注解只能提前写死,而实体这种可以加判断)导出导出Excel数据
+     * @param response
+     */
+    @GetMapping("exportEntity")
+    public void exportEntity(HttpServletResponse response) {
+        studentService.exportEntity(response);
+    }
+
+    //--------------------------------------------------------------------------------------------
 
     /**
      * 通过模板导出Excel数据
@@ -50,6 +62,8 @@ public class ExcelExportController {
     public void exportTemplae(HttpServletResponse response) {
         studentService.exportTemplae(response);
     }
+
+    //--------------------------------------------------------------------------------------------
 
     /**
      * 多个关联对象情况下的Excel导出--->设定教师和课程是一对一的,因为是用jdbc做的,

@@ -1,30 +1,33 @@
 package com.yb.easypoi.service;
 
-import cn.afterturn.easypoi.cache.manager.IFileLoader;
 import cn.afterturn.easypoi.entity.ImageEntity;
 import cn.afterturn.easypoi.excel.ExcelExportUtil;
+import cn.afterturn.easypoi.excel.ExcelImportUtil;
 import cn.afterturn.easypoi.excel.entity.ExportParams;
+import cn.afterturn.easypoi.excel.entity.ImportParams;
 import cn.afterturn.easypoi.excel.entity.TemplateExportParams;
+import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
+import cn.afterturn.easypoi.excel.entity.result.ExcelImportResult;
 import com.google.common.collect.Lists;
 import com.yb.easypoi.model.Course;
+import com.yb.easypoi.model.People;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.model.Teacher;
 import com.yb.easypoi.repository.StudentRepository;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author yangbiao
@@ -37,6 +40,27 @@ public class StudentService {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    /**
+     * 下载Excel文件到指定的位置(一般都是项目resource下)
+     *
+     * @param workbook
+     * @throws IOException
+     */
+    private void downloadExcel(Workbook workbook) throws IOException {
+        //设置文件所在位置的文件夹
+        File savefile = new File("src\\main\\resources\\static\\");
+        //删除以前的文件,保持文件是最近操作生成的
+        if (!savefile.exists()) {
+            savefile.mkdirs();
+        }
+        //获取字节输出流
+        FileOutputStream fos = new FileOutputStream("src\\main\\resources\\static\\fail.xls");
+        //输出(下载)工作簿
+        workbook.write(fos);
+        //关闭流
+        fos.close();
+    }
 
     /**
      * 用输出的流的方式把Excel在网页输出---(方法抽取)
@@ -81,10 +105,10 @@ public class StudentService {
             return;
         }
         //以流的方式输出到页面
-        //重置响应对象
-        response.reset();
         //设置文件名称
         String exportName = "我的Excel-" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
+        //重置响应对象
+        response.reset();
         // 指定下载的文件名--设置响应头
         try {
             response.setHeader("Content-Disposition", "attachment;filename=" +
@@ -102,6 +126,7 @@ public class StudentService {
 
     /**
      * 输出方法抽取-----(公共方法)
+     *
      * @param response
      * @param workbook
      * @param word
@@ -132,6 +157,7 @@ public class StudentService {
 
     /**
      * 查询所有的student数据信息---List<Student></>
+     *
      * @return
      */
     public List<Student> findAll() {
@@ -141,6 +167,7 @@ public class StudentService {
 
     /**
      * 查询所有的student数据信息---List<Map<String,Object></>></>
+     *
      * @return
      */
     public List<Map<String, Object>> queryAll() {
@@ -156,7 +183,7 @@ public class StudentService {
         List<Student> all = studentRepository.findAll();
         //设置相关的样式标题等信息
         ExportParams exportParams = new ExportParams();
-        exportParams.setTitle("学生信息");
+//        exportParams.setTitle("学生信息");
         //获取工作簿
         Workbook workbook = ExcelExportUtil.exportExcel(exportParams, Student.class, all);
         //输出为Exce文件
@@ -193,6 +220,7 @@ public class StudentService {
 
     /**
      * 多个关联对象情况下的Excel导出
+     *
      * @param response
      */
     public void exportCollect(HttpServletResponse response) {
@@ -223,4 +251,105 @@ public class StudentService {
         Workbook workbook = ExcelExportUtil.exportExcel(exportParams, Course.class, result);
         outPutExcel(response, workbook);
     }
+
+    /**
+     * 通过ExcelExportEntity(一个对象相当于一个注解,比注解更灵活,
+     * 注解只能提前写死,而实体这种可以加判断)导出导出Excel数据
+     *
+     * @param response
+     */
+    public void exportEntity(HttpServletResponse response) {
+        List<ExcelExportEntity> list = Lists.newArrayList();
+        //设置id信息
+        list.add(new ExcelExportEntity("学号", "id"));
+        //设置name信息
+        ExcelExportEntity name = new ExcelExportEntity("姓名", "name");
+        name.setNeedMerge(true);
+        name.setMergeVertical(true);
+        list.add(name);
+        //设置name信息
+        ExcelExportEntity age = new ExcelExportEntity("年龄", "age");
+        age.setNeedMerge(true);
+        age.setMergeVertical(true);
+        list.add(age);
+        //设置name信息
+        ExcelExportEntity className = new ExcelExportEntity("班级", "class_name");
+        className.setNeedMerge(true);
+        className.setMergeVertical(true);
+        list.add(className);
+        //设置name信息
+        ExcelExportEntity joinTime = new ExcelExportEntity("入学日期", "join_time");
+        joinTime.setNeedMerge(true);
+        joinTime.setMergeVertical(true);
+        list.add(joinTime);
+        //查询导出数据
+        List<Map<String, Object>> maps = studentRepository.queryAll();
+        //导出数据
+        Workbook workbook = ExcelExportUtil.exportExcel(new ExportParams("ExcelExportEntity版的导出", "sheet-1"),
+                list, maps);
+        //输出到页面
+        outPutExcel(response, workbook);
+    }
+
+
+    //000000000000000000000000000000000000000000以下是导入的内容0000000000000000000000000000000000000000000000
+
+    /**
+     * 通过Map这种方式的导入
+     * * @return
+     *
+     * @param file
+     * @param response
+     */
+    public String importFile(MultipartFile file, HttpServletResponse response) {
+        if (file == null) {
+            log.info("上传附件为空");
+            return "导入失败";
+        }
+        //设置导入的一些基本信息
+        ImportParams importParams = new ImportParams();
+        //如果有标题必须要正确的设置标题行数(默认0行-->没标题)
+        importParams.setTitleRows(1);
+        //表头默认是一行,如果不是请正确设置
+        importParams.setHeadRows(1);
+        //(数据)开始行默认是0,也就是表头下的第一行数据是0,一般不跳过前几行数据也不用设置
+        importParams.setStartRows(0);
+        //开启导入校验
+        importParams.setNeedVerfiy(true);
+        try {
+            //一般来说都是上传附件,故而基本都是输入流的方式
+            InputStream iss = file.getInputStream();
+            List<Map<String, Object>> maps = ExcelImportUtil.importExcel(iss, Map.class, importParams);
+            //流被使用了就用完了,所以需要在次获取流(实测)
+            InputStream is = file.getInputStream();
+            //使用这个api可以获取导入校验报错的信息
+            ExcelImportResult<People> result = ExcelImportUtil.importExcelMore(is, People.class, importParams);
+            //获取导入成功的数据
+            List<People> list = result.getList();
+            //获取导入错误的数据
+            List<People> failList = result.getFailList();
+            //是否校验错误
+            boolean verfiyFail = result.isVerfiyFail();
+            System.err.println(failList);
+            System.err.println("==" + verfiyFail);
+            System.err.println(list);
+            System.err.println(maps);
+            //获取错误的工作簿
+            Workbook failWorkbook = result.getFailWorkbook();
+            //把错误的工作簿信息存储到指定的位置,以便下载阅看
+            downloadExcel(failWorkbook);
+            //保存数据到数据库
+            if(!result.isVerfiyFail()){
+                System.err.println("导入未出现错误");
+            }else{
+                System.err.println("导入错误");
+            }
+        } catch (Exception e) {
+            log.info("异常为==" + e.getMessage());
+            e.printStackTrace();
+            return "导入失败";
+        }
+        return "导入成功";
+    }
+
 }
