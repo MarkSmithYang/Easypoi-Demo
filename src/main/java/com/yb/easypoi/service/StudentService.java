@@ -9,12 +9,15 @@ import cn.afterturn.easypoi.excel.entity.TemplateExportParams;
 import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
 import cn.afterturn.easypoi.excel.entity.result.ExcelImportResult;
 import com.google.common.collect.Lists;
+import com.yb.easypoi.exception.ParameterErrorException;
 import com.yb.easypoi.model.Course;
 import com.yb.easypoi.model.People;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.model.Teacher;
 import com.yb.easypoi.repository.StudentRepository;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author yangbiao
@@ -47,15 +51,24 @@ public class StudentService {
      * @param workbook
      * @throws IOException
      */
-    private void downloadExcel(Workbook workbook) throws IOException {
+    private void downloadExcel(Workbook workbook, String dirPath, String fileName) throws IOException {
+        if (workbook == null) {
+            log.info("传入的工作簿为空");
+            ParameterErrorException.message("操作失败");
+        }
+        //判断路径是否靠谱
+        if (StringUtils.isBlank(dirPath) || StringUtils.isBlank(fileName)) {
+            log.info("文件夹路径或文件名为空");
+            ParameterErrorException.message("操作失败");
+        }
         //设置文件所在位置的文件夹
-        File savefile = new File("src\\main\\resources\\static\\");
+        File savefile = new File(dirPath);
         //删除以前的文件,保持文件是最近操作生成的
         if (!savefile.exists()) {
             savefile.mkdirs();
         }
         //获取字节输出流
-        FileOutputStream fos = new FileOutputStream("src\\main\\resources\\static\\fail.xls");
+        FileOutputStream fos = new FileOutputStream(dirPath + fileName);
         //输出(下载)工作簿
         workbook.write(fos);
         //关闭流
@@ -316,34 +329,77 @@ public class StudentService {
         importParams.setStartRows(0);
         //开启导入校验
         importParams.setNeedVerfiy(true);
+        //
+//        importParams.setVerifyHandler(new People());
+//        importParams.setLastOfInvalidRow(20);
+//        importParams.setReadRows(5);
+//        importParams.setNeedCheckOrder(true);
+        importParams.setReadSingleCell(true);
         try {
             //一般来说都是上传附件,故而基本都是输入流的方式
             InputStream iss = file.getInputStream();
             List<Map<String, Object>> maps = ExcelImportUtil.importExcel(iss, Map.class, importParams);
+            System.err.println(maps.size());
+            System.err.println(maps);
             //流被使用了就用完了,所以需要在次获取流(实测)
             InputStream is = file.getInputStream();
             //使用这个api可以获取导入校验报错的信息
             ExcelImportResult<People> result = ExcelImportUtil.importExcelMore(is, People.class, importParams);
+            List<People> failList1 = result.getFailList();
+            InputStream isss = file.getInputStream();
+            List<People> objects = ExcelImportUtil.importExcel(isss, People.class, importParams);
+            System.err.println("--------------");
+            if (CollectionUtils.isNotEmpty(objects)) {
+                objects.forEach(s -> {
+                    System.err.println(s.getErrorMsg());
+                });
+            }
+            System.err.println(objects);
+            System.err.println("--------------");
             //获取导入成功的数据
             List<People> list = result.getList();
+            System.err.println(list);
             //获取导入错误的数据
             List<People> failList = result.getFailList();
             //是否校验错误
             boolean verfiyFail = result.isVerfiyFail();
-            System.err.println(failList);
-            System.err.println("==" + verfiyFail);
-            System.err.println(list);
-            System.err.println(maps);
+//           if(verfiyFail){
             //获取错误的工作簿
             Workbook failWorkbook = result.getFailWorkbook();
             //把错误的工作簿信息存储到指定的位置,以便下载阅看
-            downloadExcel(failWorkbook);
-            //保存数据到数据库
-            if(!result.isVerfiyFail()){
-                System.err.println("导入未出现错误");
-            }else{
-                System.err.println("导入错误");
+            Workbook workbook = ExcelExportUtil.exportExcel(new ExportParams("导入数据出错情况", "sheet1"), People.class, objects);
+            //扩大集合的作用域(全局变量)
+            List<People> collect = new ArrayList<>();
+            //获取整合后校验不通过的数据
+            if (result != null) {
+                //获取list和failList的数据
+                List<People> li = result.getList();
+                List<People> fa = result.getFailList();
+                //合并两集合的内容
+                if (CollectionUtils.isEmpty(li)) {
+                    li = new ArrayList<>();
+                }
+                //如果failList不为空则合并
+                if (CollectionUtils.isNotEmpty(fa)) {
+                    li.addAll(fa);
+                }
+                //剔除无效的信息
+                collect = li.stream().filter(a -> {
+                    if (StringUtils.isNotBlank(a.getErrorMsg())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }).collect(Collectors.toList());
             }
+            System.err.println("00000" + collect);
+            Workbook fail = ExcelExportUtil.exportExcel(new ExportParams("错误数据的校验情况", "sheet@@@"), People.class, collect);
+            downloadExcel(failWorkbook, "src\\main\\resources\\static\\", "fail.xls");
+            downloadExcel(workbook, "src\\main\\resources\\static\\", "list.xls");
+            downloadExcel(fail, "src\\main\\resources\\static\\", "failList.xls");
+//           }
+            //保存数据到数据库
+
         } catch (Exception e) {
             log.info("异常为==" + e.getMessage());
             e.printStackTrace();
