@@ -6,10 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
@@ -36,7 +33,7 @@ public class ExcelImportController {
      */
     @GetMapping("importFailExcel")
     public String importFailExcel() {
-      return "fail.xls";
+      return "mergeFailList.xls";
     }
 
     /**
@@ -46,7 +43,9 @@ public class ExcelImportController {
      * @return
      */
     @PostMapping("importFile")
+    @ResponseBody
     public String importFile(MultipartFile file, HttpServletResponse response) {
+        //使用json形式的数据返回在类上有@Controller的时候需要在方法上添加@ResponseBody
         String result = studentService.importFile(file, response);
         return result;
     }

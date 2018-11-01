@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -196,7 +197,7 @@ public class StudentService {
         List<Student> all = studentRepository.findAll();
         //设置相关的样式标题等信息
         ExportParams exportParams = new ExportParams();
-//        exportParams.setTitle("学生信息");
+        exportParams.setTitle("学生信息");
         //获取工作簿
         Workbook workbook = ExcelExportUtil.exportExcel(exportParams, Student.class, all);
         //输出为Exce文件
@@ -305,7 +306,7 @@ public class StudentService {
     }
 
 
-    //000000000000000000000000000000000000000000以下是导入的内容0000000000000000000000000000000000000000000000
+    //000000000000000000000000000000000000000000以下是导入的内容000000000000000000000000000000000000000000000
 
     /**
      * 通过Map这种方式的导入
@@ -314,6 +315,7 @@ public class StudentService {
      * @param file
      * @param response
      */
+    @Transactional(rollbackFor = Exception.class)
     public String importFile(MultipartFile file, HttpServletResponse response) {
         if (file == null) {
             log.info("上传附件为空");
@@ -329,83 +331,149 @@ public class StudentService {
         importParams.setStartRows(0);
         //开启导入校验
         importParams.setNeedVerfiy(true);
-        //
-//        importParams.setVerifyHandler(new People());
-//        importParams.setLastOfInvalidRow(20);
-//        importParams.setReadRows(5);
-//        importParams.setNeedCheckOrder(true);
-        importParams.setReadSingleCell(true);
         try {
+            //-------------------------------------------------------------------------------------------
             //一般来说都是上传附件,故而基本都是输入流的方式
             InputStream iss = file.getInputStream();
             List<Map<String, Object>> maps = ExcelImportUtil.importExcel(iss, Map.class, importParams);
-            System.err.println(maps.size());
-            System.err.println(maps);
+            System.err.println("通过map封装的数据:" + maps);
+            //流被使用了就用完了,所以需要在次获取流(实测)
+            InputStream isss = file.getInputStream();
+            //这个是直接获取集合的api,这个获取不到fail相关的数据,但是自定义校验依旧可以得到-->不推荐使用这个
+            List<People> objects = ExcelImportUtil.importExcel(isss, People.class, importParams);
+            //-------------------------------------------------------------------------------------------
+
             //流被使用了就用完了,所以需要在次获取流(实测)
             InputStream is = file.getInputStream();
             //使用这个api可以获取导入校验报错的信息
             ExcelImportResult<People> result = ExcelImportUtil.importExcelMore(is, People.class, importParams);
-            List<People> failList1 = result.getFailList();
-            InputStream isss = file.getInputStream();
-            List<People> objects = ExcelImportUtil.importExcel(isss, People.class, importParams);
-            System.err.println("--------------");
-            if (CollectionUtils.isNotEmpty(objects)) {
-                objects.forEach(s -> {
-                    System.err.println(s.getErrorMsg());
-                });
+            if (result == null) {
+                log.info("返回的Excel的导入结果对象为空");
+                ParameterErrorException.message("导入错误");
             }
-            System.err.println(objects);
-            System.err.println("--------------");
-            //获取导入成功的数据
+            //获取整合后校验信息的集合
+            List<People> collect = getMergeFailWordbook(result);
+            //获取getList()的数据-->可能包含自定义校验不通过的信息但是它是注解(常规的校验(非自定义的))校验通过的
             List<People> list = result.getList();
             System.err.println(list);
             //获取导入错误的数据
             List<People> failList = result.getFailList();
-            //是否校验错误
+            System.err.println(failList);
+            //制作一个开关按钮-->用于处理含有无效行的时候result.isVerfiyFail()为false的情况
+            boolean flag = false;
+            //实测证明不管result.isVerfiyFail()为true还是false,都不会影响到自定义校验的,自定义校验未通过时,
+            // 这个还是可以false,只有当注解校验不通过时,它才会为true,所以这个不能作为是否校验通过的的依据
+            //当然了,没有自定义校验的时候,这个应该可以用,但是为了兼容性,就不会去用它
             boolean verfiyFail = result.isVerfiyFail();
-//           if(verfiyFail){
-            //获取错误的工作簿
+            //获取错误的工作簿-->实测证明自定义校验不通过的也不会再里面
             Workbook failWorkbook = result.getFailWorkbook();
-            //把错误的工作簿信息存储到指定的位置,以便下载阅看
-            Workbook workbook = ExcelExportUtil.exportExcel(new ExportParams("导入数据出错情况", "sheet1"), People.class, objects);
-            //扩大集合的作用域(全局变量)
-            List<People> collect = new ArrayList<>();
-            //获取整合后校验不通过的数据
-            if (result != null) {
-                //获取list和failList的数据
-                List<People> li = result.getList();
-                List<People> fa = result.getFailList();
-                //合并两集合的内容
-                if (CollectionUtils.isEmpty(li)) {
-                    li = new ArrayList<>();
-                }
-                //如果failList不为空则合并
-                if (CollectionUtils.isNotEmpty(fa)) {
-                    li.addAll(fa);
-                }
-                //剔除无效的信息
-                collect = li.stream().filter(a -> {
-                    if (StringUtils.isNotBlank(a.getErrorMsg())) {
-                        return true;
+            //把响应的信息存储在项目下以便查看或下载
+            downloadExcel(failWorkbook, "src\\main\\resources\\static\\", "failWorkbook.xls");
+            List<String> errors = new ArrayList<>();
+            //以json的形式打印出校验不通过的信息--->可以根据自己的情况来定,我这里没有做返回值,而是做成Excel
+            if (CollectionUtils.isNotEmpty(collect)) {
+                //校验信息按照行号正序排序
+                collect.sort((a, b) -> {
+                    if (a.getRowNum() >= b.getRowNum()) {
+                        return 1;
                     } else {
-                        return false;
+                        return -1;
                     }
-                }).collect(Collectors.toList());
+                });
+                //提取校验错误的信息
+                collect.forEach(s -> {
+                    errors.add("第" + s.getRowNum() + "行:" + s.getErrorMsg());
+                });
+                log.info("导入错误信息:" + errors);
+                //获取合并后的工作簿
+                Workbook mergeFail = ExcelExportUtil.exportExcel(new ExportParams("错误数据的校验情况", "sheet@@@"), People.class, collect);
+                //存储Excel
+                downloadExcel(mergeFail, "src\\main\\resources\\static\\", "mergeFailList.xls");
+                return "导入错误,错误信息为:" + errors;
+            } else {
+                //没有有效的校验信息,即没有导入错误或者传入的 ExcelImportResult<People>对象为空
+                flag = true;
             }
-            System.err.println("00000" + collect);
-            Workbook fail = ExcelExportUtil.exportExcel(new ExportParams("错误数据的校验情况", "sheet@@@"), People.class, collect);
-            downloadExcel(failWorkbook, "src\\main\\resources\\static\\", "fail.xls");
-            downloadExcel(workbook, "src\\main\\resources\\static\\", "list.xls");
-            downloadExcel(fail, "src\\main\\resources\\static\\", "failList.xls");
-//           }
-            //保存数据到数据库
-
+            //保存数据
+            if (flag) {
+                //导入工作簿没有出现错误,处理正确的数据保存数据到数据库
+                if (CollectionUtils.isNotEmpty(list)) {
+                    //因为上面合并校验的时候没有出现校验不通过的信息,说明list里已经没有自定义的校验不通过的信息存在
+                    //所以这里的数据全部都是导入成功无异常的数据-->所以可以直接保存数据
+                    //实测证明,当没有校验的时候,无效行也会随着进入到getList()数据中,如果想保存到数据库中,需要剔除它们
+                    List<People> peoples = list.stream().filter(s -> {
+                        //当封装数据的对象需要封装的属性的值都为空时,说明是无效对象,剔除它们
+                        if (StringUtils.isBlank(s.getId()) && StringUtils.isBlank(s.getName()) &&
+                                StringUtils.isBlank(s.getAddress())) {
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }).collect(Collectors.toList());
+                    //保存数据
+                    studentRepository.insertPeople(peoples);
+                    return "导入成功";
+                } else {
+                    log.info("导入的数据为空");
+                }
+            }
         } catch (Exception e) {
             log.info("异常为==" + e.getMessage());
             e.printStackTrace();
-            return "导入失败";
+            //抛出异常让事务回滚-->重点
+            ParameterErrorException.message(e.getMessage());
         }
-        return "导入成功";
+        return "导入失败";
     }
 
+    /**
+     * 合并整合校验不通过的校验信息
+     *
+     * @param result
+     * @return
+     */
+    private List<People> getMergeFailWordbook(ExcelImportResult<People> result) {
+        //初始化一个集合备用
+        List<People> people = new ArrayList<>();
+        //获取整合后校验不通过的数据
+        //获取list和failList的数据
+        List<People> li = result.getList();
+        List<People> fa = result.getFailList();
+        //合并两集合的内容
+        if (CollectionUtils.isNotEmpty(li)) {
+            //获取有效的校验信息(就是通过自定义校验不通过的信息-->实测它会进入这个list里和正常的数据在一起)
+            List<People> collect = li.stream().filter(s -> {
+                //剔除校验通过的信息
+                if (StringUtils.isNotBlank(s.getErrorMsg())) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }).collect(Collectors.toList());
+            //实测证明集合不能合并null--->即list.addAll(null)是会报空指针的
+            //也不能直接通过people来接收,万一为null,那么people就白实例化了下面使用肯定会报错的
+            if (CollectionUtils.isNotEmpty(collect)) {
+                people.addAll(collect);
+            }
+        }
+        //如果failList不为空则合并
+        if (CollectionUtils.isNotEmpty(fa)) {
+            //剔除无效的信息
+            List<People> fails = fa.stream().filter(a -> {
+                //通过自己定义的给无效行定义的标记,把无效行剔除
+                // 我这里没有弄常量字典->标记尽量不太可能和一般的校验信息一样,不然有些有效行也会被剔除
+                //如果还是怕的话,就用UUID生成一个字符串来标记吧,我相信能够重合的概率几乎不存在了
+                if ("^invalid&^@error^".equals(a.getErrorMsg())) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }).collect(Collectors.toList());
+            //剔除无效行之后,如果不为空,说明有有效的校验信息,合并到集合里
+            if (CollectionUtils.isNotEmpty(fails)) {
+                people.addAll(fails);
+            }
+        }
+        return people;
+    }
 }

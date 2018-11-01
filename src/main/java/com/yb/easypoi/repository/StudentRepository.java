@@ -1,14 +1,19 @@
 package com.yb.easypoi.repository;
 
 import com.google.common.collect.Lists;
+import com.yb.easypoi.exception.ParameterErrorException;
+import com.yb.easypoi.model.People;
 import com.yb.easypoi.model.Student;
 import com.yb.easypoi.model.Teacher;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.util.*;
@@ -21,6 +26,7 @@ import java.util.stream.Collectors;
  */
 @Repository
 public class StudentRepository {
+ public static final Logger log = LoggerFactory.getLogger(StudentRepository.class);
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -145,5 +151,23 @@ public class StudentRepository {
         return null;
     }
 
-
+    /**
+     * 保存导入的数据到数据库
+     * @param peoples
+     */
+    @Transactional
+    public void insertPeople(List<People> peoples) {
+        if(CollectionUtils.isEmpty(peoples)){
+            log.info("获取到的导入数据为空");
+            ParameterErrorException.message("导入失败");
+        }
+        //因为传递过来的集合之前已经判定不为空了所以直接用即可
+        peoples.forEach(s->{
+            jdbcTemplate.update("insert into people (id,`name`,address) values (?,?,?)",preparedStatement -> {
+                preparedStatement.setObject(1, s.getId());
+                preparedStatement.setObject(2, s.getName());
+                preparedStatement.setObject(3, s.getAddress());
+            });
+        });
+    }
 }

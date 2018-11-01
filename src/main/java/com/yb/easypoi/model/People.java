@@ -24,20 +24,20 @@ public class People implements Serializable, IExcelModel, IExcelDataModel, IExce
      * id
      */
     @Excel(name = "编号", isImportField = "true")
-    @NotBlank(message = "编号不能为空")
+//    @NotBlank(message = "编号不能为空")
     private String id;
 
     /**
      * 姓名
      */
-    @Pattern(regexp = "^[\\u4E00-\\u9FA5]*$", message = "姓名不是中文")
+//    @Pattern(regexp = "^[\\u4E00-\\u9FA5]*$", message = "姓名不是中文")
     @Excel(name = "姓名", needMerge = true, mergeVertical = true)
     private String name;
 
     /**
      * 住址
      */
-    @Pattern(regexp = "^[\\u4E00-\\u9FA5]{3}$", message = "住址最低需要三个中文字")
+//    @Pattern(regexp = "^[\\u4E00-\\u9FA5]{3}$", message = "住址最低需要三个中文字")
     @Excel(name = "住址", needMerge = true, mergeVertical = true)
     private String address;
 
@@ -117,16 +117,21 @@ public class People implements Serializable, IExcelModel, IExcelDataModel, IExce
         if (StringUtils.isBlank(id) && StringUtils.isBlank(name) && StringUtils.isBlank(address)) {
             //清空导入api对无效单元格行的校验信息-->为了后面通过这个的非空判断获取有效单元格行的校验信息
             //这一步至关重要这是目前找到的剔除无效行的最好的办法了,当然了我们需要实现IExcelModel接口来实现这一步
-            this.errorMsg = "";
+            //为无效行做标记,实测当导入正确的excel并且含有无效行的时候,如果这里errorMag为空的话,所有errorMag都为空了
+            //那么就不能区分无效行了,所以这里不能清空,做个标记即可,获取校验不通过的信息的时候直接通过这个标记剔除无效行
+            this.errorMsg = "^invalid&^@error^";
         } else {
+            //实测证明,当所有的校验都通过的时候,也就是我把校验注解全部注释掉以后,导入,那些无效行还是会转为无效对象,而且
+            //errorMsg也是空,而不是"^invalid&^@error^"这个字符串,所以这个set方法是需要校验不通过才会进来,你才有机会给它
+            //加标记,故而还是需要在获取的getList()的数据里把那些无效对象给剔除出来才行
             this.errorMsg = errorMsg;
         }
     }
 
     @Override
     public ExcelVerifyHandlerResult verifyHandler(People people) {
-        if ("人走茶凉".equals(people.getName())) {
-            this.errorMsg = "姓名不符合要求,不能是人走茶凉";
+        if ("阿三".equals(people.getName())) {
+            this.errorMsg = "姓名不符合自定义校验的要求,姓名不能是阿三";
         }
         return null;
     }
