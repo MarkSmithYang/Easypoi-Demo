@@ -313,10 +313,22 @@ public class StudentService {
      * * @return
      *
      * @param file
-     * @param response
      */
     @Transactional(rollbackFor = Exception.class)
-    public String importFile(MultipartFile file, HttpServletResponse response) {
+    public String importFile(MultipartFile file) {
+        //判断文件的大小
+        try {
+            //这个长度是文件的字节数1Kb=1024Byte
+            int length = file.getBytes().length;
+            if (length > 50 * 1024 * 1024) {
+                ParameterErrorException.message("文件大小不能超过50M");
+            }
+            System.err.println(length);
+        } catch (IOException e) {
+            log.info("判断上传文件的大小出现异常了");
+            e.printStackTrace();
+        }
+        //这个判断附件是否为空可以通过@Validated和@NotNull
         if (file == null) {
             log.info("上传附件为空");
             return "导入失败";
@@ -330,7 +342,7 @@ public class StudentService {
         //(数据)开始行默认是0,也就是表头下的第一行数据是0,一般不跳过前几行数据也不用设置
         importParams.setStartRows(0);
         //开启导入校验
-        importParams.setNeedVerfiy(true);
+        importParams.setNeedVerify(true);
         try {
             //-------------------------------------------------------------------------------------------
             //一般来说都是上传附件,故而基本都是输入流的方式

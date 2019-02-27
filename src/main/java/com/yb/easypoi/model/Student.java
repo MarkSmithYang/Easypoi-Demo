@@ -3,6 +3,8 @@ package com.yb.easypoi.model;
 import cn.afterturn.easypoi.excel.annotation.Excel;
 import cn.afterturn.easypoi.excel.annotation.ExcelEntity;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -12,12 +14,14 @@ import java.util.UUID;
  * @Description:学生实体类--这个需要配合实体类使用的方式最好不要用jdbc来获取数据,使用jpa为最好
  * @date 2018/10/23
  */
+@Entity
 public class Student implements Serializable {
     private static final long serialVersionUID = -3944779670897279495L;
 
     /**
      * 入学编号
      */
+    @Id
     @Excel(name = "入学编号", orderNum = "1", needMerge = true)
     private String id;
 

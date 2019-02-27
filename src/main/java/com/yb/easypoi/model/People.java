@@ -8,36 +8,41 @@ import cn.afterturn.easypoi.handler.inter.IExcelVerifyHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.formula.functions.T;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
 /**
  * @author yangbiao
- * @Description:
+ * @Description:导出和导入都需要@Excel注解来实现映射关联关系(实测)
  * @date 2018/10/30
  */
+@Entity
 public class People implements Serializable, IExcelModel, IExcelDataModel, IExcelVerifyHandler<People> {
     private static final long serialVersionUID = 5573829739286021262L;
 
     /**
      * id
      */
+    @Id
     @Excel(name = "编号", isImportField = "true")
-//    @NotBlank(message = "编号不能为空")
+    @NotBlank(message = "编号不能为空")
     private String id;
 
     /**
      * 姓名
      */
-//    @Pattern(regexp = "^[\\u4E00-\\u9FA5]*$", message = "姓名不是中文")
+    @Pattern(regexp = "^[\\u4E00-\\u9FA5]*$", message = "姓名不是中文")
     @Excel(name = "姓名", needMerge = true, mergeVertical = true)
     private String name;
 
     /**
      * 住址
      */
-//    @Pattern(regexp = "^[\\u4E00-\\u9FA5]{3}$", message = "住址最低需要三个中文字")
+    @Pattern(regexp = "^[\\u4E00-\\u9FA5]{3}$", message = "住址最低需要三个中文字")
     @Excel(name = "住址", needMerge = true, mergeVertical = true)
     private String address;
 
@@ -86,12 +91,14 @@ public class People implements Serializable, IExcelModel, IExcelDataModel, IExce
     /**
      * 错误信息
      */
+    @Transient
     @Excel(name = "错误信息", needMerge = true, mergeVertical = true)
     private String errorMsg;
 
     /**
      * 所在行(行号)
      */
+    @Transient
     private int rowNum;
 
     @Override

@@ -44,9 +44,9 @@ public class ExcelImportController {
      */
     @PostMapping("importFile")
     @ResponseBody
-    public String importFile(MultipartFile file, HttpServletResponse response) {
+    public String importFile(MultipartFile file) {
         //使用json形式的数据返回在类上有@Controller的时候需要在方法上添加@ResponseBody
-        String result = studentService.importFile(file, response);
+        String result = studentService.importFile(file);
         return result;
     }
 

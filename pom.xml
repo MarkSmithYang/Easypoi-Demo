@@ -25,6 +25,18 @@
     </properties>
 
     <dependencies>
+        <!--springboot整合easypoi的组件-->
+        <dependency>
+            <groupId>cn.afterturn</groupId>
+            <artifactId>easypoi-spring-boot-starter</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <!--这里专门用来自动建表-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <!--用来查询数据-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
@@ -33,26 +45,27 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!--easypoi的三个依赖-->
+        <!--easypoi的三个依赖,这个就是没有使用springboot的starter组件的依赖-->
         <!-- https://mvnrepository.com/artifact/cn.afterturn/easypoi-base -->
-        <dependency>
-            <groupId>cn.afterturn</groupId>
-            <artifactId>easypoi-base</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/cn.afterturn/easypoi-annotation -->
-        <dependency>
-            <groupId>cn.afterturn</groupId>
-            <artifactId>easypoi-annotation</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/cn.afterturn/easypoi-web -->
-        <dependency>
-            <groupId>cn.afterturn</groupId>
-            <artifactId>easypoi-web</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-        <!--easypoi的三个依赖-->
+        <!--<dependency>-->
+            <!--<groupId>cn.afterturn</groupId>-->
+            <!--<artifactId>easypoi-base</artifactId>-->
+            <!--<version>3.3.0</version>-->
+        <!--</dependency>-->
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/cn.afterturn/easypoi-annotation &ndash;&gt;-->
+        <!--<dependency>-->
+            <!--<groupId>cn.afterturn</groupId>-->
+            <!--<artifactId>easypoi-annotation</artifactId>-->
+            <!--<version>3.3.0</version>-->
+        <!--</dependency>-->
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/cn.afterturn/easypoi-web &ndash;&gt;-->
+        <!--<dependency>-->
+            <!--<groupId>cn.afterturn</groupId>-->
+            <!--<artifactId>easypoi-web</artifactId>-->
+            <!--<version>3.3.0</version>-->
+        <!--</dependency>-->
+
+        <!--其他相关依赖-->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
@@ -78,7 +91,6 @@
             <artifactId>itext-asian</artifactId>
             <version>5.2.0</version>
         </dependency>
-        <!--pdf需要的依赖-->
         <!--常用的基本的依赖(铁三件)-->
         <dependency>
             <groupId>org.apache.commons</groupId>

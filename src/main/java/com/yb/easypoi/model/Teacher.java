@@ -2,6 +2,9 @@ package com.yb.easypoi.model;
 
 import cn.afterturn.easypoi.excel.annotation.Excel;
 import cn.afterturn.easypoi.excel.annotation.ExcelTarget;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -10,6 +13,7 @@ import java.util.UUID;
  * @Description:教师类
  * @date 2018/10/29
  */
+@Entity
 @ExcelTarget("teacher")
 public class Teacher implements Serializable {
     private static final long serialVersionUID = 1095168552207599306L;
@@ -17,6 +21,7 @@ public class Teacher implements Serializable {
     /**
      * id
      */
+    @Id
     private String id;
 
     /**
