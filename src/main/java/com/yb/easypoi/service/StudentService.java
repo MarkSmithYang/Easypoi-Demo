@@ -9,6 +9,7 @@ import cn.afterturn.easypoi.excel.entity.TemplateExportParams;
 import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
 import cn.afterturn.easypoi.excel.entity.result.ExcelImportResult;
 import com.google.common.collect.Lists;
+import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
 import com.yb.easypoi.exception.ParameterErrorException;
 import com.yb.easypoi.model.Course;
 import com.yb.easypoi.model.People;
@@ -212,7 +213,7 @@ public class StudentService {
                 "src\\main\\resources\\templates\\WPS创建的Excel模板.xlsx");
         params.setSheetName("学生信息表");
         //封装数据
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", "入学编号");
         map.put("name", "姓名");
         map.put("age", "年龄");
@@ -343,6 +344,13 @@ public class StudentService {
         importParams.setStartRows(0);
         //开启导入校验
         importParams.setNeedVerify(true);
+        importParams.setNeedCheckOrder(true);
+        //最后的无效行数,不读的行数
+        //importParams.setLastOfInvalidRow();
+        //手动控制读取的行数
+        //importParams.setReadRows();
+        //设置下值,就是表示表头必须至少包含的字段,如果缺一个就是不合法的excel,不导入
+        //importParams.setImportFields(new String[]{"上传Excel必要的列名1","上传Excel必要的列名2"});
         try {
             //-------------------------------------------------------------------------------------------
             //一般来说都是上传附件,故而基本都是输入流的方式
@@ -355,9 +363,11 @@ public class StudentService {
             List<People> objects = ExcelImportUtil.importExcel(isss, People.class, importParams);
             //-------------------------------------------------------------------------------------------
 
-            //流被使用了就用完了,所以需要在次获取流(实测)
+            //流被使用了就用完了,所以需要在次获取流(实测),流用完了就会报---The supplied file was empty (zero bytes long)
             InputStream is = file.getInputStream();
-            //使用这个api可以获取导入校验报错的信息
+            //使用这个api可以获取导入校验报错的信息`
+            ExcelImportResult<People> result2 = ExcelImportUtil.importExcelMore(file.getInputStream(), People.class, importParams);
+            System.out.println(result2);
             ExcelImportResult<People> result = ExcelImportUtil.importExcelMore(is, People.class, importParams);
             if (result == null) {
                 log.info("返回的Excel的导入结果对象为空");
@@ -453,14 +463,10 @@ public class StudentService {
         List<People> fa = result.getFailList();
         //合并两集合的内容
         if (CollectionUtils.isNotEmpty(li)) {
-            //获取有效的校验信息(就是通过自定义校验不通过的信息-->实测它会进入这个list里和正常的数据在一起)
+            //获取有效的校验信息(就是通过[自定义]校验不通过的信息-->实测它会进入这个list里和正常的数据在一起)
             List<People> collect = li.stream().filter(s -> {
                 //剔除校验通过的信息
-                if (StringUtils.isNotBlank(s.getErrorMsg())) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return StringUtils.isNotBlank(s.getErrorMsg())?true:false;
             }).collect(Collectors.toList());
             //实测证明集合不能合并null--->即list.addAll(null)是会报空指针的
             //也不能直接通过people来接收,万一为null,那么people就白实例化了下面使用肯定会报错的

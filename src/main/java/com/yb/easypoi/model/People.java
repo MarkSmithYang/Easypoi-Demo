@@ -43,7 +43,7 @@ public class People implements Serializable, IExcelModel, IExcelDataModel, IExce
      * 住址
      */
     @Pattern(regexp = "^[\\u4E00-\\u9FA5]{3}$", message = "住址最低需要三个中文字")
-    @Excel(name = "住址", needMerge = true, mergeVertical = true)
+//    @Excel(name = "住址", needMerge = true, mergeVertical = true,isImportField = "true")
     private String address;
 
     public People() {
@@ -92,7 +92,7 @@ public class People implements Serializable, IExcelModel, IExcelDataModel, IExce
      * 错误信息
      */
     @Transient
-    @Excel(name = "错误信息", needMerge = true, mergeVertical = true)
+//    @Excel(name = "错误信息", needMerge = true, mergeVertical = true)
     private String errorMsg;
 
     /**
