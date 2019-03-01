@@ -352,6 +352,7 @@ public class StudentService {
         //设置下值,就是表示表头必须至少包含的字段,如果缺一个就是不合法的excel,不导入
         //importParams.setImportFields(new String[]{"上传Excel必要的列名1","上传Excel必要的列名2"});
         try {
+            //导入注意日期时间,这个最容易出现问题,使用java8的LocalDate比较容易出问题,而Date却不会
             //-------------------------------------------------------------------------------------------
             //一般来说都是上传附件,故而基本都是输入流的方式
             InputStream iss = file.getInputStream();

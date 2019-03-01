@@ -42,7 +42,7 @@ public class ExcelImportController {
      * @param file
      * @return
      */
-    @PostMapping("importFile")
+    @PostMapping("importFile")//导入注意日期时间,这个最容易出现问题,使用java8的LocalDate比较容易出问题,而Date却不会
     @ResponseBody
     public String importFile(MultipartFile file) {
         //使用json形式的数据返回在类上有@Controller的时候需要在方法上添加@ResponseBody
