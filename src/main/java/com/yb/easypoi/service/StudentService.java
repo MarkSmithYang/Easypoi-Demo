@@ -213,12 +213,16 @@ public class StudentService {
                 "src\\main\\resources\\templates\\WPS创建的Excel模板.xlsx");
         params.setSheetName("学生信息表");
         //封装数据
+        //注意下面的那个map根本不需要,添加map.put("id","入学编号")这样的信息了,这个是用来获取表头的,模板肯定有表头的,
+        //所以也不需要使用{{id}}这样去获取表头了,直接写遍历的数据就好,还有就是这种方式根本不需要使用封装到映射实体这样的数据,
+        //只需要返回的数据是key和value的数据就可以了,实测使用List<JSONObject>可以实现导出,当然了List<Map<String,Object>也是一样的
+        //所以可以直接使用原生的sql返回数据由Map或者JSONObject(建议),然后处理即可
         Map<String, Object> map = new HashMap<>();
         map.put("id", "入学编号");
         map.put("name", "姓名");
         map.put("age", "年龄");
         map.put("join_time", "入学时间");
-        map.put("class_name", "班级");
+        map.put("class_name", "班级");//------------------>使用case when then else end配合count,max,sum等可以完成很多骚操作(jpql/hql都有)
 
         //图片导出的写法(直接通过有参构造来设置图片信息,建议使用url的那种,
         // 字节数组的那种是比较特定情况下来用,因为比较繁琐)
