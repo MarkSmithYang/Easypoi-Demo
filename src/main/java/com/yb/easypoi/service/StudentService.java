@@ -324,6 +324,7 @@ public class StudentService {
         //判断文件的大小
         try {
             //这个长度是文件的字节数1Kb=1024Byte
+            //file.getSize()可以替代下面的
             int length = file.getBytes().length;
             if (length > 50 * 1024 * 1024) {
                 ParameterErrorException.message("文件大小不能超过50M");
